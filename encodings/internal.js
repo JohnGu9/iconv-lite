@@ -46,23 +46,72 @@ InternalCodec.prototype.decoder = InternalDecoder
 
 // ------------------------------------------------------------------------------
 
-// We use node.js internal decoder. Its signature is the same as ours.
-var StringDecoder = require("string_decoder").StringDecoder
+/** @type {typeof TextDecoder} */
+var _Decoder
+
+if (typeof TextDecoder !== "undefined") {
+  // TextDecoder available
+  _Decoder = TextDecoder
+} else {
+  // We use node.js internal decoder. Its signature is the same as ours.
+  var StringDecoder = require("string_decoder").StringDecoder
+  if (StringDecoder.prototype.end) {
+    StringDecoder.prototype.decode = function (buf) {
+      if (buf === undefined) return this.end()
+      else return this.write(buf)
+    }
+  } else {
+    StringDecoder.prototype.decode = function (buf) {
+      if (buf !== undefined) return this.write(buf)
+    }
+  }
+  _Decoder = StringDecoder
+}
 
 function InternalDecoder (options, codec) {
-  this.decoder = new StringDecoder(codec.enc)
+  switch (codec.enc) {
+    case "hex":
+    case "base64":
+    case "binary": {
+      /** @type {TextDecoder} */
+      this.decoder = {
+        enc: codec.enc,
+        buffer: Buffer.from(""),
+        decode: function (buf) {
+          if (buf === undefined) {
+            var res = this.buffer
+            this.buffer = Buffer.from("")
+            return res.toString(this.enc)
+          } else {
+            if (!Buffer.isBuffer(buf)) {
+              buf = Buffer.from(buf)
+            }
+            this.buffer = Buffer.concat([this.buffer, buf])
+            return ""
+          }
+        }
+      }
+      break
+    }
+    case "ucs2": {
+      this.decoder = new _Decoder("utf-16", { ignoreBOM: options?.stripBOM === false || typeof options?.stripBOM === "function" })
+      break
+    }
+    default: {
+      this.decoder = new _Decoder(codec.enc, { ignoreBOM: options?.stripBOM === false || typeof options?.stripBOM === "function" })
+    }
+  }
 }
 
 InternalDecoder.prototype.write = function (buf) {
   if (!Buffer.isBuffer(buf)) {
     buf = Buffer.from(buf)
   }
-
-  return this.decoder.write(buf)
+  return this.decoder.decode(buf, { stream: true })
 }
 
 InternalDecoder.prototype.end = function () {
-  return this.decoder.end()
+  return this.decoder.decode(undefined, { stream: true })
 }
 
 // ------------------------------------------------------------------------------
