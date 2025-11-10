@@ -25,7 +25,11 @@ function InternalCodec (codecOptions, iconv) {
   this.enc = codecOptions.encodingName
   this.bomAware = codecOptions.bomAware
 
-  if (this.enc === "base64") { this.encoder = InternalEncoderBase64 } else if (this.enc === "utf8") { this.encoder = InternalEncoderUtf8 } else if (this.enc === "cesu8") {
+  if (this.enc === "base64") {
+    this.encoder = InternalEncoderBase64
+  } else if (this.enc === "utf8") {
+    this.encoder = InternalEncoderUtf8
+  } else if (this.enc === "cesu8") {
     this.enc = "utf8" // Use utf8 for decoding.
     this.encoder = InternalEncoderCesu8
 
@@ -42,72 +46,42 @@ InternalCodec.prototype.decoder = InternalDecoder
 
 // ------------------------------------------------------------------------------
 
-/** @type {typeof TextDecoder} */
-var _Decoder;
-
-if (typeof TextDecoder !== 'undefined') {
-    // TextDecoder available
-    _Decoder = TextDecoder;
-} else {
-    // We use node.js internal decoder. Its signature is the same as ours.
-    var StringDecoder = require('string_decoder').StringDecoder;
-    if (StringDecoder.prototype.end) {
-        StringDecoder.prototype.decode = function (buf) {
-            if (buf === undefined) return this.end();
-            else return this.write(buf);
+function InternalDecoder (options, codec) {
+  if (codec.enc === "hex" || codec.enc === "base64" || codec.enc === "binary") {
+    this.decoder = {
+      enc: codec.enc,
+      buffer: Buffer.from(""),
+      decode: function (buf) {
+        if (buf === undefined) {
+          var res = this.buffer
+          this.buffer = Buffer.from("")
+          return res.toString(this.enc)
+        } else {
+          if (!Buffer.isBuffer(buf)) {
+            buf = Buffer.from(buf)
+          }
+          this.buffer = Buffer.concat([this.buffer, buf])
+          return ""
         }
-    } else {
-        StringDecoder.prototype.decode = function (buf) {
-            if (buf !== undefined) return this.write(buf);
-        }
+      }
     }
-    _Decoder = StringDecoder;
-}
-
-function InternalDecoder(options, codec) {
-    switch (codec.enc) {
-        case 'hex':
-        case 'base64':
-        case 'binary': {
-            /** @type {TextDecoder} */
-            this.decoder = {
-                enc: codec.enc,
-                buffer: Buffer.from(""),
-                decode: function (buf) {
-                    if (buf === undefined) {
-                        var res = this.buffer;
-                        this.buffer = Buffer.from("");
-                        return res.toString(this.enc);
-                    } else {
-                        if (!Buffer.isBuffer(buf)) {
-                            buf = Buffer.from(buf);
-                        }
-                        this.buffer = Buffer.concat([this.buffer, buf]);
-                        return "";
-                    }
-                }
-            };
-            break;
-        }
-        case 'ucs2': {
-            this.decoder = new _Decoder('utf-16', { ignoreBOM: options?.stripBOM === false || typeof options?.stripBOM === 'function' });
-            break;
-        }
-        default: {
-            this.decoder = new _Decoder(codec.enc, { ignoreBOM: options?.stripBOM === false || typeof options?.stripBOM === 'function' });
-        }
-    }
+  } else if (codec.enc === "ucs2") {
+    this.decoder = new TextDecoder("utf-16", { ignoreBOM: options?.stripBOM === false || typeof options?.stripBOM === "function" })
+  }
+  else {
+    this.decoder = new TextDecoder(codec.enc, { ignoreBOM: options?.stripBOM === false || typeof options?.stripBOM === "function" })
+  }
 }
 
 InternalDecoder.prototype.write = function (buf) {
-    if (!Buffer.isBuffer(buf)) {
-        buf = Buffer.from(buf);
-    }
-    return this.decoder.decode(buf, { stream: true });
+  if (!Buffer.isBuffer(buf)) {
+    buf = Buffer.from(buf)
+  }
+  return this.decoder.decode(buf, { stream: true })
 }
 
 InternalDecoder.prototype.end = function () {
-    return this.decoder.decode(undefined, { stream: true });
+  return this.decoder.decode(undefined, { stream: true })
 }
 
 // ------------------------------------------------------------------------------
