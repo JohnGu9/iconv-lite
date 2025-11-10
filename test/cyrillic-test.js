@@ -1,81 +1,117 @@
-var assert = require('assert'),
-    Buffer = require('safer-buffer').Buffer,
-    iconv = require(__dirname+'/../');
+"use strict"
+
+var assert = require("assert")
+var utils = require("./utils")
+var iconv = utils.requireIconv()
 
 var baseStrings = {
-    empty: "",
-    hi: "Привет!",
-    ascii: '\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f'+
-           ' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\x7f',
-    rus: "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюя",
-    additional1: "ЂЃ‚ѓ„…†‡€‰Љ‹ЊЌЋЏђ‘’“”•–—™љ›њќћџ ЎўЈ¤Ґ¦§Ё©Є«¬\xAD®Ї°±Ііґµ¶·ё№є»јЅѕї",
-    additional2: "─│┌┐└┘├┤┬┴┼▀▄█▌▐░▒▓⌠■∙√≈≤≥ ⌡°²·÷═║╒ё╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡Ё╢╣╤╥╦╧╨╩╪╫╬©",
-    additional3: " ЁЂЃЄЅІЇЈЉЊЋЌ­ЎЏ№ёђѓєѕіїјљњћќ§ўџ",
-    untranslatable: "£Åçþÿ¿",
-};
+  empty: "",
+  hi: "Привет!",
+  ascii:
+        "\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f" +
+        " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\x7f",
+  rus: "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюя",
+  additional1: "ЂЃ‚ѓ„…†‡€‰Љ‹ЊЌЋЏђ‘’“”•–—™љ›њќћџ ЎўЈ¤Ґ¦§Ё©Є«¬\xAD®Ї°±Ііґµ¶·ё№є»јЅѕї",
+  additional2: "─│┌┐└┘├┤┬┴┼▀▄█▌▐░▒▓⌠■∙√≈≤≥ ⌡°²·÷═║╒ё╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡Ё╢╣╤╥╦╧╨╩╪╫╬©",
+  additional3: " ЁЂЃЄЅІЇЈЉЊЋЌ­ЎЏ№ёђѓєѕіїјљњћќ§ўџ",
+  untranslatable: "£Åçþÿ¿"
+}
 
-var encodings = [{
+var encodings = [
+  {
     name: "Win-1251",
-    variations: ['win1251', 'Windows-1251', 'windows1251', 'CP1251', 1251],
+    variations: ["win1251", "Windows-1251", "windows1251", "CP1251", 1251],
     encodedStrings: {
-        empty: Buffer.from(''),
-        hi: Buffer.from('\xcf\xf0\xe8\xe2\xe5\xf2!', 'binary'),
-        ascii: Buffer.from(baseStrings.ascii, 'binary'),
-        rus: Buffer.from('\xc0\xc1\xc2\xc3\xc4\xc5\xc6\xc7\xc8\xc9\xca\xcb\xcc\xcd\xce\xcf\xd0\xd1\xd2\xd3\xd4\xd5\xd6\xd7\xd8\xd9\xda\xdb\xdc\xdd\xde\xdf\xe0\xe1\xe2\xe3\xe4\xe5\xe6\xe7\xe8\xe9\xea\xeb\xec\xed\xee\xef\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff', 'binary'),
-        additional1: Buffer.from('\x80\x81\x82\x83\x84\x85\x86\x87\x88\x89\x8a\x8b\x8c\x8d\x8e\x8f\x90\x91\x92\x93\x94\x95\x96\x97\x99\x9a\x9b\x9c\x9d\x9e\x9f\xa0\xa1\xa2\xa3\xa4\xa5\xa6\xa7\xa8\xa9\xaa\xab\xac\xad\xae\xaf\xb0\xb1\xb2\xb3\xb4\xb5\xb6\xb7\xb8\xb9\xba\xbb\xbc\xbd\xbe\xbf','binary'),
+      empty: utils.bytes([]),
+      hi: utils.bytes("cf f0 e8 e2 e5 f2 21"),
+      ascii: utils.bytes(baseStrings.ascii.split("").map((c) => c.charCodeAt(0))),
+      rus: utils.bytes(
+        "c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 ca cb cc cd ce cf d0 d1 d2 d3 d4 d5 d6 d7 d8 d9 da db dc dd de df e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 ea eb ec ed ee ef f0 f1 f2 f3 f4 f5 f6 f7 f8 f9 fa fb fc fd fe ff"
+      ),
+      additional1: utils.bytes(
+        "80 81 82 83 84 85 86 87 88 89 8a 8b 8c 8d 8e 8f 90 91 92 93 94 95 96 97 99 9a 9b 9c 9d 9e 9f a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 aa ab ac ad ae af b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 ba bb bc bd be bf"
+      )
     }
-}, {
+  },
+  {
     name: "Koi8-R",
-    variations: ['koi8r', 'KOI8-R', 'cp20866', 20866],
+    variations: ["koi8r", "KOI8-R", "cp20866", 20866],
     encodedStrings: {
-        empty: Buffer.from(''),
-        hi: Buffer.from('\xf0\xd2\xc9\xd7\xc5\xd4!', 'binary'),
-        ascii: Buffer.from(baseStrings.ascii, 'binary'),
-        rus: Buffer.from('\xe1\xe2\xf7\xe7\xe4\xe5\xf6\xfa\xe9\xea\xeb\xec\xed\xee\xef\xf0\xf2\xf3\xf4\xf5\xe6\xe8\xe3\xfe\xfb\xfd\xff\xf9\xf8\xfc\xe0\xf1\xc1\xc2\xd7\xc7\xc4\xc5\xd6\xda\xc9\xca\xcb\xcc\xcd\xce\xcf\xd0\xd2\xd3\xd4\xd5\xc6\xc8\xc3\xde\xdb\xdd\xdf\xd9\xd8\xdc\xc0\xd1', 'binary'),
-        additional2: Buffer.from('\x80\x81\x82\x83\x84\x85\x86\x87\x88\x89\x8a\x8b\x8c\x8d\x8e\x8f\x90\x91\x92\x93\x94\x95\x96\x97\x98\x99\x9a\x9b\x9c\x9d\x9e\x9f\xa0\xa1\xa2\xa3\xa4\xa5\xa6\xa7\xa8\xa9\xaa\xab\xac\xad\xae\xaf\xb0\xb1\xb2\xb3\xb4\xb5\xb6\xb7\xb8\xb9\xba\xbb\xbc\xbd\xbe\xbf', 'binary'),
+      empty: utils.bytes([]),
+      hi: utils.bytes("f0 d2 c9 d7 c5 d4 21"),
+      ascii: utils.bytes(baseStrings.ascii.split("").map((c) => c.charCodeAt(0))),
+      rus: utils.bytes(
+        "e1 e2 f7 e7 e4 e5 f6 fa e9 ea eb ec ed ee ef f0 f2 f3 f4 f5 e6 e8 e3 fe fb fd ff f9 f8 fc e0 f1 c1 c2 d7 c7 c4 c5 d6 da c9 ca cb cc cd ce cf d0 d2 d3 d4 d5 c6 c8 c3 de db dd df d9 d8 dc c0 d1"
+      ),
+      additional2: utils.bytes(
+        "80 81 82 83 84 85 86 87 88 89 8a 8b 8c 8d 8e 8f 90 91 92 93 94 95 96 97 98 99 9a 9b 9c 9d 9e 9f a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 aa ab ac ad ae af b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 ba bb bc bd be bf"
+      )
     }
-}, {
+  },
+  {
     name: "ISO 8859-5",
-    variations: ['iso88595', 'ISO-8859-5', 'ISO 8859-5', 'cp28595', 28595],
+    variations: ["iso88595", "ISO-8859-5", "ISO 8859-5", "cp28595", 28595],
     encodedStrings: {
-        empty: Buffer.from(''),
-        hi: Buffer.from('\xbf\xe0\xd8\xd2\xd5\xe2!', 'binary'),
-        ascii: Buffer.from(baseStrings.ascii, 'binary'),
-        rus: Buffer.from('\xb0\xb1\xb2\xb3\xb4\xb5\xb6\xb7\xb8\xb9\xba\xbb\xbc\xbd\xbe\xbf\xc0\xc1\xc2\xc3\xc4\xc5\xc6\xc7\xc8\xc9\xca\xcb\xcc\xcd\xce\xcf\xd0\xd1\xd2\xd3\xd4\xd5\xd6\xd7\xd8\xd9\xda\xdb\xdc\xdd\xde\xdf\xe0\xe1\xe2\xe3\xe4\xe5\xe6\xe7\xe8\xe9\xea\xeb\xec\xed\xee\xef', 'binary'),
-        additional3: Buffer.from('\xa0\xa1\xa2\xa3\xa4\xa5\xa6\xa7\xa8\xa9\xaa\xab\xac\xad\xae\xaf\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff', 'binary'),
+      empty: utils.bytes([]),
+      hi: utils.bytes("bf e0 d8 d2 d5 e2 21"),
+      ascii: utils.bytes(baseStrings.ascii.split("").map((c) => c.charCodeAt(0))),
+      rus: utils.bytes(
+        "b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 ba bb bc bd be bf c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 ca cb cc cd ce cf d0 d1 d2 d3 d4 d5 d6 d7 d8 d9 da db dc dd de df e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 ea eb ec ed ee ef"
+      ),
+      additional3: utils.bytes(
+        "a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 aa ab ac ad ae af f0 f1 f2 f3 f4 f5 f6 f7 f8 f9 fa fb fc fd fe ff"
+      )
     }
-}];
+  }
+]
 
-describe("Test Cyrillic encodings", function() {
-    encodings.forEach(function(encoding) {
-        var enc = encoding.variations[0];
-        var key = "hi";
-        describe(encoding.name+":", function() {
-            
-            it("Convert from buffer", function() {
-                for (var key in encoding.encodedStrings)
-                    assert.strictEqual(iconv.decode(encoding.encodedStrings[key], enc), 
-                        baseStrings[key]);
-            });
-            
-            it("Convert to buffer", function() {
-                for (var key in encoding.encodedStrings)
-                    assert.strictEqual(iconv.encode(baseStrings[key], enc).toString('binary'), 
-                        encoding.encodedStrings[key].toString('binary'));
-            });
+describe("Test Cyrillic encodings #node-web", function () {
+  encodings.forEach(function (encoding) {
+    var enc = encoding.variations[0]
+    var key = "hi"
+    describe(encoding.name + ":", function () {
+      it("Convert from buffer", function () {
+        for (const key in encoding.encodedStrings) {
+          assert.strictEqual(
+            iconv.decode(encoding.encodedStrings[key], enc),
+            baseStrings[key]
+          )
+        }
+      })
 
-            it("Try different variations of encoding", function() {
-                encoding.variations.forEach(function(enc) {
-                    assert.strictEqual(iconv.decode(encoding.encodedStrings[key], enc), baseStrings[key]);
-                    assert.strictEqual(iconv.encode(baseStrings[key], enc).toString('binary'), encoding.encodedStrings[key].toString('binary'));
-                });
-            });
+      it("Convert to buffer", function () {
+        for (const key in encoding.encodedStrings) {
+          assert.strictEqual(
+            utils.hex(iconv.encode(baseStrings[key], enc)),
+            utils.hex(encoding.encodedStrings[key])
+          )
+        }
+      })
 
-            it("Untranslatable chars are converted to defaultCharSingleByte", function() {
-                var expected = baseStrings.untranslatable.split('').map(function(c) {return iconv.defaultCharSingleByte; }).join('');
-                assert.strictEqual(iconv.encode(baseStrings.untranslatable, enc).toString('binary'), expected); // Only '?' characters.
-            });
-        });
-    });
-});
+      it("Try different variations of encoding", function () {
+        encoding.variations.forEach(function (enc) {
+          assert.strictEqual(
+            iconv.decode(encoding.encodedStrings[key], enc),
+            baseStrings[key]
+          )
+          assert.strictEqual(
+            utils.hex(iconv.encode(baseStrings[key], enc)),
+            utils.hex(encoding.encodedStrings[key])
+          )
+        })
+      })
 
+      it("Untranslatable chars are converted to defaultCharSingleByte", function () {
+        const untranslatableBytes = utils.bytes(
+          baseStrings.untranslatable
+            .split("")
+            .map(() => iconv.defaultCharSingleByte.charCodeAt(0))
+        )
+        assert.strictEqual(
+          utils.hex(iconv.encode(baseStrings.untranslatable, enc)),
+          utils.hex(untranslatableBytes)
+        ) // Only '?' characters.
+      })
+    })
+  })
+})

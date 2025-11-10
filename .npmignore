@@ -6,4 +6,8 @@ wiki
 coverage
 .github
 .idea
-.travis.yml
+performance
+.nyc_output
+eslint.config.js
+*.tgz
+.git-blame-ignore-revs

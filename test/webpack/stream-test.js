@@ -1,25 +1,26 @@
-var assert = require('assert').strict;
+"use strict"
 
-describe("iconv-lite with streams", function() {
-    var iconv = require(".").iconv;
+var assert = require("assert").strict
 
-    it("supports streams when explicitly enabled", function() {
-        iconv.enableStreamingAPI(require('stream'));
-        assert(iconv.supportsStreams);
-    });
+describe("iconv-lite with streams", function () {
+  var iconv = require("iconv-lite")
 
-    it("can encode/decode in streaming mode", function(done) {
-        var stream1 = iconv.encodeStream("win1251");
-        var stream2 = iconv.decodeStream("win1251");
-        stream1.pipe(stream2);
+  it("supports streams when explicitly enabled", function () {
+    iconv.enableStreamingAPI(require("stream"))
+    assert(iconv.supportsStreams)
+  })
 
-        stream1.end("abc");
-        stream2.collect(function(err, str) {
-            if (err)
-                return done(err);
+  it("can encode/decode in streaming mode", function (done) {
+    var stream1 = iconv.encodeStream("win1251")
+    var stream2 = iconv.decodeStream("win1251")
+    stream1.pipe(stream2)
 
-            assert.equal(str, "abc");
-            done(null);
-        });
-    });
-});
+    stream1.end("abc")
+    stream2.collect(function (err, str) {
+      if (err) { return done(err) }
+
+      assert.equal(str, "abc")
+      done(null)
+    })
+  })
+})
