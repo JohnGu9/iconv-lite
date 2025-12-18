@@ -1,5 +1,7 @@
 "use strict"
 
+const webpack = require("webpack")
+
 // Karma configuration
 // Generated on Sat May 23 2020 18:02:48 GMT-0400 (Eastern Daylight Time)
 process.env.CHROME_BIN = require("puppeteer").executablePath()
@@ -11,7 +13,14 @@ module.exports = function (config) {
 
     // frameworks to use
     // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
-    frameworks: ["mocha"],
+    frameworks: ["mocha", "webpack"],
+
+    plugins: [
+      "karma-webpack",
+      "karma-mocha",
+      "karma-chrome-launcher",
+      "karma-mocha-reporter"
+    ],
 
     // list of files / patterns to load in the browser
     files: [
@@ -25,7 +34,23 @@ module.exports = function (config) {
     },
 
     webpack: {
-      mode: "development"
+      mode: "development",
+      target: ["web"],
+      resolve: {
+        fallback: {
+          stream: require.resolve("stream-browserify"),
+          assert: require.resolve("assert/"),
+          util: require.resolve("util/")
+        }
+      },
+      node: {
+        global: true
+      },
+      plugins: [
+        new webpack.ProvidePlugin({
+          process: require.resolve("process/browser.js")
+        })
+      ]
       // karma watches the test entry points
       // (you don't need to specify the entry option)
       // webpack watches dependencies
