@@ -46,60 +46,30 @@ InternalCodec.prototype.decoder = InternalDecoder
 
 // ------------------------------------------------------------------------------
 
-/** @type {typeof TextDecoder} */
-var _Decoder
-
-if (typeof TextDecoder !== "undefined") {
-  // TextDecoder available
-  _Decoder = TextDecoder
-} else {
-  // We use node.js internal decoder. Its signature is the same as ours.
-  var StringDecoder = require("string_decoder").StringDecoder
-  if (StringDecoder.prototype.end) {
-    StringDecoder.prototype.decode = function (buf) {
-      if (buf === undefined) return this.end()
-      else return this.write(buf)
-    }
-  } else {
-    StringDecoder.prototype.decode = function (buf) {
-      if (buf !== undefined) return this.write(buf)
-    }
-  }
-  _Decoder = StringDecoder
-}
-
 function InternalDecoder (options, codec) {
-  switch (codec.enc) {
-    case "hex":
-    case "base64":
-    case "binary": {
-      /** @type {TextDecoder} */
-      this.decoder = {
-        enc: codec.enc,
-        buffer: Buffer.from(""),
-        decode: function (buf) {
-          if (buf === undefined) {
-            var res = this.buffer
-            this.buffer = Buffer.from("")
-            return res.toString(this.enc)
-          } else {
-            if (!Buffer.isBuffer(buf)) {
-              buf = Buffer.from(buf)
-            }
-            this.buffer = Buffer.concat([this.buffer, buf])
-            return ""
+  if (codec.enc === "hex" || codec.enc === "base64" || codec.enc === "binary") {
+    this.decoder = {
+      enc: codec.enc,
+      buffer: Buffer.from(""),
+      decode: function (buf) {
+        if (buf === undefined) {
+          var res = this.buffer
+          this.buffer = Buffer.from("")
+          return res.toString(this.enc)
+        } else {
+          if (!Buffer.isBuffer(buf)) {
+            buf = Buffer.from(buf)
           }
+          this.buffer = Buffer.concat([this.buffer, buf])
+          return ""
         }
       }
-      break
     }
-    case "ucs2": {
-      this.decoder = new _Decoder("utf-16", { ignoreBOM: options?.stripBOM === false || typeof options?.stripBOM === "function" })
-      break
-    }
-    default: {
-      this.decoder = new _Decoder(codec.enc, { ignoreBOM: options?.stripBOM === false || typeof options?.stripBOM === "function" })
-    }
+  } else if (codec.enc === "ucs2") {
+    this.decoder = new TextDecoder("utf-16", { ignoreBOM: options?.stripBOM === false || typeof options?.stripBOM === "function" })
+  }
+  else {
+    this.decoder = new TextDecoder(codec.enc, { ignoreBOM: options?.stripBOM === false || typeof options?.stripBOM === "function" })
   }
 }
 
